@@ -13,7 +13,6 @@ class Weapon
 
   public function new():Void
   {
-
     damage = new Damage(_damageMin, _damageMax);
   }
 

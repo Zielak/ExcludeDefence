@@ -1,6 +1,10 @@
 
 package weapons;
 
+import flixel.FlxG;
+import flixel.util.FlxPoint;
+
+
 /**
  * WeaponSloManager is responsible for
  * - getting input
@@ -56,6 +60,15 @@ class WeaponManager
 
 
 
+
+  /**
+   * Dummy temp stuff
+   */
+  private var _projectilePos:FlxPoint = new FlxPoint(0,0);
+  private var _projectileVel:FlxPoint = new FlxPoint(0,0);
+  private var _projectile:Projectile;
+
+
   public function new(slots:Int):Void
   {
     _slots = new Array<WeaponSlot>();
@@ -84,9 +97,7 @@ class WeaponManager
       {
         // TODO: Fire projectiles in the air!
         //       Suck this dunctionality out from the Weapon
-
-
-
+        fireWeapon
       }
     }
 
@@ -191,7 +202,19 @@ class WeaponManager
 
 
 
+  private function fireWeapon():Void
+  {
+    _projectilePos.x = _owner.position.x;
+    _projectilePos.y = _owner.position.y;
+    _projectileVel.x = _owner.velocity.x;
+    _projectileVel.y = _owner.velocity.y;
 
+    _projectile = new Projectile(_projectilePos, _projectileVel);
+    _projectile
+
+    FlxG.state.addBullet();
+
+  }
 
 
 
