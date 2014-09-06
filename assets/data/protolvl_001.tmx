@@ -1,25 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="64" height="32" tilewidth="16" tileheight="16">
  <objectgroup name="world" width="64" height="32">
-  <object x="3" y="8">
-   <polygon points="0,0 68,-1 70,174 80,182 195,194 293,185 454,183 594,189 572,483 4,477"/>
+  <object x="22" y="31">
+   <polygon points="0,0 -4,140 22,169 146,172 145,98 22,101 24,-1"/>
   </object>
-  <object x="334" y="248">
-   <polygon points="0,0 -46,-48 9,-60 9,-82 49,-81 49,-99 112,-98 111,-78 166,-78 165,-63 217,-61 187,-3"/>
-  </object>
-  <object x="697" y="222">
-   <polygon points="0,0 -2,14 317,22 322,-75 286,-76 281,-20 272,-9 144,0"/>
-  </object>
-  <object x="382" y="105">
-   <polyline points="0,0 67,3"/>
-  </object>
-  <object x="379" y="64">
-   <polyline points="0,0 69,0"/>
+  <object x="151" y="35">
+   <polygon points="0,0 1,30 90,23 94,123 69,124 68,151 134,154 151,141 148,18 145,1 123,-12"/>
   </object>
  </objectgroup>
- <objectgroup name="volumes" width="64" height="32">
-  <object name="playerStart" x="112" y="133" width="23" height="22">
-   <ellipse/>
-  </object>
- </objectgroup>
+ <objectgroup name="volumes" width="64" height="32"/>
 </map>

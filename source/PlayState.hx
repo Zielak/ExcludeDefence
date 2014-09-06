@@ -41,6 +41,7 @@ class PlayState extends FlxNapeState
     _currentLevel = new Level();
     FlxG.log.add(_currentLevel.polymap.toString());
     add(_currentLevel.polymap);
+    add(_currentLevel.linemap);
 
     add(projectiles);
   }

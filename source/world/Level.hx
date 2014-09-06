@@ -2,11 +2,15 @@
 package world;
 
 import flixel.FlxG;
+import flixel.FlxSprite;
+import flixel.addons.display.shapes.FlxShapeLine;
 import flixel.addons.editors.tiled.*;
 import flixel.addons.nape.FlxNapeTilemap;
 import flixel.addons.nape.FlxNapeSprite;
 import flixel.addons.nape.FlxNapeState;
 import flixel.group.FlxTypedGroup;
+import flixel.util.FlxPoint;
+import flixel.util.FlxSpriteUtil;
 
 import nape.geom.AABB;
 import nape.geom.GeomPoly;
@@ -21,11 +25,19 @@ class Level implements ILevel
 
   private var _map:TiledMap;
   private var _tilemap:FlxNapeTilemap;
+
   private var _polymap:FlxTypedGroup<FlxNapeSprite>;
   public var polymap(get_polymap, null):FlxTypedGroup<FlxNapeSprite>;
   public function get_polymap():FlxTypedGroup<FlxNapeSprite>{
     return _polymap;
   }
+
+  private var _linemap:FlxTypedGroup<FlxSprite>;
+  public var linemap(get_linemap, null):FlxTypedGroup<FlxSprite>;
+  public function get_linemap():FlxTypedGroup<FlxSprite>{
+    return _linemap;
+  }
+  private var _linesOffset:Int = 5;
   
 
   private var _gravity:Vec2;
@@ -37,7 +49,8 @@ class Level implements ILevel
   private var _geomPoly:GeomPoly;
   private var _geomPolyList:GeomPolyList;
   private var _verts:Array<Vec2>;
-  private var _vec:Vec2 = new Vec2(0,0);
+  private var _vec:Vec2;
+  private var _vec2:Vec2;
 
   /**
    * Static polygons layer that player can move on
@@ -50,46 +63,47 @@ class Level implements ILevel
     FlxG.log.add("In Level new()");
     _map = new TiledMap(AssetPaths.protolvl_001__tmx);
     _polymap = new FlxTypedGroup<FlxNapeSprite>();
+    _linemap = new FlxTypedGroup<FlxSprite>();
 
     // TODO: Get gravity from Tiled map config
     // FlxNapeState.space.gravity = new Vec2(0, 600);
 
     initWorld();
-
-    FlxG.log.add("_polymap: "+_polymap.toString());
-
-
-    FlxG.log.add("Out Level new()");
   }
   
   private function initWorld():Void
   {
-    FlxG.log.add("In Level initWorld()");
+    // FlxG.log.add("In Level initWorld()");
     _worldGroup = _map.getObjectGroup("world");
 
     for(o in _worldGroup.objects)
     {
-
-      // FlxG.log.add("loop - object with "+ o.points.length+" points.");
+      // Get all vertices
       _verts = new Array<Vec2>();
+      var vminx:Float = 0;
+      var vminy:Float = 0;
 
       for(v in o.points)
       {
         _vec = new Vec2(v.x, v.y);
-        // if(_vec.x == 0 && _vec.y == 0) continue;
 
-        FlxG.log.add("loop - vec: "+_vec.toString());
+        if(_vec.x < vminx){
+          vminx = _vec.x;
+          FlxG.log.add("new min x: "+vminx);
+        }
+        if(_vec.y < vminy){
+          vminy = _vec.y;
+          FlxG.log.add("new min y: "+vminy);
+        }
+
         _verts.push(_vec);
       }
 
-      // _vec.x = o.points[0].x;
-      // _vec.y = o.points[0].y;
-      // _verts.push(_vec);
-
+      // Start physics shapes
       _geomPoly = new GeomPoly(_verts);
-      FlxG.log.add("_______________________________");
-      FlxG.log.add("_geomPoly ["+_geomPoly.size()+"] area:"+_geomPoly.area());
-      FlxG.log.add("_geomPoly.isDegenerate() = "+_geomPoly.isDegenerate());
+      // FlxG.log.add("_______________________________");
+      // FlxG.log.add("_geomPoly ["+_geomPoly.size()+"] area:"+_geomPoly.area());
+      // FlxG.log.add("_geomPoly.isDegenerate() = "+_geomPoly.isDegenerate());
 
       _geomPolyList = new GeomPolyList();
 
@@ -113,15 +127,42 @@ class Level implements ILevel
 
         _napeSprite = new FlxNapeSprite(o.x, o.y);
         _napeSprite.addPremadeBody(_body);
-
-        _polymap.add(_napeSprite);
-
       }
+
+
+      // Draw all lines
+      // FlxG.log.add("#### DRAW ALL LINES");
+      var bounds:AABB = _geomPoly.bounds();
+      var polySprite:FlxSprite = new FlxSprite(bounds.x + o.x - _linesOffset, bounds.y + o.y - _linesOffset);
+      var sw:Int = Std.int(bounds.max.x - bounds.min.x)+_linesOffset*2;
+      var sh:Int = Std.int(bounds.max.y - bounds.min.y)+_linesOffset*2;
+
+      polySprite.makeGraphic(sw, sh, 0x00000000);
+      polySprite.antialiasing = false;
+
+      for(i in 0..._verts.length)
+      {
+        _vec = _verts[i];
+        if(i >= _verts.length-1){
+          _vec2 = _verts[0];
+        }else{
+          _vec2 = _verts[i+1];
+        }
+
+        FlxSpriteUtil.drawLine(polySprite,
+          _vec.x-vminx+_linesOffset, _vec.y-vminy+_linesOffset,
+          _vec2.x-vminx+_linesOffset, _vec2.y-vminy+_linesOffset,
+          {thickness: 3, color: 0xFF66FF66},
+          {smoothing: false}
+        );
+      }
+
+
+      _linemap.add(polySprite);
 
     }
     // FlxG.log.add("Out Level initWorld()");
   }
-
 
 
 
@@ -133,6 +174,7 @@ interface ILevel
 {
 
   public function get_polymap():FlxTypedGroup<FlxNapeSprite>;
+  public function get_linemap():FlxTypedGroup<FlxSprite>;
 
 }
 
