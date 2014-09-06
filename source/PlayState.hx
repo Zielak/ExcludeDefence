@@ -32,7 +32,7 @@ class PlayState extends FlxNapeState
   override public function create():Void
   {
     super.create();
-
+    FlxG.stage.quality = flash.display.StageQuality.LOW;
     napeDebugEnabled = true;
 
     projectiles = new FlxTypedGroup<Projectile>();
