@@ -11,7 +11,7 @@ class Damage
   private var _max:Int;
 
 
-  public function new(A:Int = 1, ?B:Int = -1):Void
+  public function new(?A:Int = 1, ?B:Int = -1):Void
   {
     if(B > 0)
     {

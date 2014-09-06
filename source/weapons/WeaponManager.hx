@@ -1,6 +1,11 @@
 
 package weapons;
 
+import flixel.FlxG;
+import flixel.util.FlxPoint;
+
+import core.Player;
+
 /**
  * WeaponSloManager is responsible for
  * - getting input
@@ -23,11 +28,11 @@ class WeaponManager
   /**
    * Get current WeaponSlot
    */
-  private var currentSlot(get, null):WeaponSlot;
+  public var currentSlot(get, null):WeaponSlot;
   /**
    * Get current Weapon
    */
-  private var currentWeapon(get, null):Weapon;
+  public var currentWeapon(get, null):Weapon;
 
 
 
@@ -56,11 +61,22 @@ class WeaponManager
 
 
 
-  public function new(slots:Int):Void
+
+  /**
+   * Dummy temp stuff
+   */
+  private var _projectilePos:FlxPoint = new FlxPoint(0,0);
+  private var _projectileVel:FlxPoint = new FlxPoint(0,0);
+  private var _projectile:Projectile;
+
+
+  public function new(owner:Player, slots:Int):Void
   {
+    _owner = owner;
+
     _slots = new Array<WeaponSlot>();
 
-    for(i in 0..slots){
+    for(i in 0...slots){
       _slots.push(new WeaponSlot());
     }
 
@@ -84,17 +100,15 @@ class WeaponManager
       {
         // TODO: Fire projectiles in the air!
         //       Suck this dunctionality out from the Weapon
-
-
-
+        fireWeapon();
       }
     }
 
-    for(s in slots)
+    for(s in _slots)
     {
       if(!s.isEmpty)
       {
-        s.updateWeapon();
+        s.weapon.updateWeapon();
       }
     }
   }
@@ -119,7 +133,7 @@ class WeaponManager
     if(targetSlot < 0)
     {
       // Pick first empty slot
-      for(i in 0.._slots.length)
+      for(i in 0..._slots.length)
       {
         if(_slots[i].isEmpty)
         {
@@ -130,8 +144,8 @@ class WeaponManager
     }
     else
     {
-      if(!_slots[i].isEmpty && !force) return;
-      if(!_slots[i].isEmpty && force)
+      if(!_slots[targetSlot].isEmpty && !force) return;
+      if(!_slots[targetSlot].isEmpty && force)
       {
         dropWeapon(targetSlot);
       }
@@ -191,7 +205,19 @@ class WeaponManager
 
 
 
+  private function fireWeapon():Void
+  {
+    _projectilePos.x = _owner.position.x;
+    _projectilePos.y = _owner.position.y;
+    _projectileVel.x = _owner.velocity.x;
+    _projectileVel.y = _owner.velocity.y;
 
+    _projectile = new Projectile(_projectilePos, _projectileVel);
+    // _projectile
+
+    cast(FlxG.state, PlayState).addBullet(_projectile);
+
+  }
 
 
 

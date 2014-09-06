@@ -10,12 +10,21 @@ import flixel.group.FlxSpriteGroup;
 import flixel.input.keyboard.FlxKey;
 import flixel.util.FlxPoint;
 
+import flixel.addons.nape.FlxNapeSprite;
+import flixel.addons.nape.FlxNapeState;
 
+import nape.shape.Circle;
+import nape.shape.Shape;
+import nape.phys.Body;
+import nape.phys.BodyType;
+import nape.geom.Vec2;
 
+import weapons.WeaponManager;
+import weapons.Weapon;
 
 
 @:bitmap("assets/images/zakk.png") class PlayerANI extends BitmapData {}
-// TODO: Separate legs and top?
+// TODO: Separate legs and top
 // @:bitmap("assets/images/zakkbottom.png") class PlayerANI extends BitmapData {}
 
 
@@ -31,176 +40,262 @@ class Player extends FlxSpriteGroup
   private static var LEFT:Int = FlxObject.LEFT;
   private static var RIGHT:Int = FlxObject.RIGHT;
 
+
   /**
-   * Movement
+   * Main physics body of the player
+   */
+  public var body(get, null):Body;
+  public function get_body():Body{
+    return _body;
+  }
+  private var _body:Body;
+
+
+  /**
+   * Sprites
+   */
+  private var _topSprite:FlxNapeSprite;
+  private var _botSprite:FlxNapeSprite;
+
+  /**
+   * Get position of the nape's body in FlxPoint
+   */
+  public var position(get, null):FlxPoint;
+  public function get_position():FlxPoint{
+    _position.x = _body.position.x;
+    _position.y = _body.position.y;
+    return _position;
+  }
+  private var _position:FlxPoint = new FlxPoint();
+
+  /**
+   * Movement data
    */
   private var _movement =
-  { maxSpeed: 200
-  , acceleration: 500
-  , airControlRate: 1.0
-  , drag: 800
-  , dashRatio: 0.8
+  {
+    maxSpeed: 200,
+    acceleration: 500,
+    airControlRate: 1.0,
+    drag: 800,
+    dashRatio: 0.8
   };
+  private var _acceleration:Vec2;
+  
 
   /**
    * Jumping
    */
   private var _jump =
-  { can: true
-  , canDouble: true
-  , canVariable: true
-  , speed: -335
+  {
+    can: true,
+    canDouble: true,
+    canVariable: true,
+    speed: -335
   };
-
-  // Just getter, cooldown is private
-  private var onGround(get, null):Bool;
-  function get_onGround() {
-    return sprites.bot.isTouching(DOWN);
-  }
-
-  
-
 
 
   /**
+   * Feet is here only to check if body is "on the floor"
+   */
+  private var _feet:Body;
+
+  /**
+   * Are we standing on the floor?
+   */
+  private var onGround(get, null):Bool;
+  function get_onGround() {
+    return false; // _body.isTouching(DOWN);
+  }
+
+  
+  /**
    * Look and move directions
    */
-  private var _direction =
-  { look: RIGHT
-  , move: RIGHT
+  private var _direction:Dynamic<Int> =
+  {
+    look: RIGHT,
+    move: RIGHT
   };
 
 
   /**
    * Visuals and Sprites
    */
-  private var sprites = 
-  { top: new FlxSprite()
-  , bot: new FlxSprite()
-  , weapon: new FlxSprite()
-  };
+  private var sprites:Dynamic<FlxSprite>;
 
-  private var _camTarget:FlxPoint = new FlxPoint(0,0);
+
+  /**
+   * Additional offset for the camera.
+   */
   public var camTarget(get, null):FlxPoint;
   function get_camTarget(){
     return _camTarget;
-  }
+  };
+  private var _camTarget:FlxPoint = new FlxPoint(0,0);
 
 
 
   /**
    * Input
    */
-  typedef SA = Array<String>;
-  typedef inputBind =
-  { jump: SA
-  , left: SA
-  , right: SA
-  , up: SA
-  , down: SA
-  , fire: SA
-  , switchWeapon: SA
-  , skill: SA
-  , pause: SA
-  , menu: SA
-  }
-  private var _input =
-  { jump: false
-  , left: false
-  , right: false
-  , up: false
-  , down: false
-  , fire: false
-  , switchWeapon: false
-  , skill: false
-  , pause: false
-  , menu: false
-  }
+  private var _inputBind:Dynamic<Array<String>>;
+  private var _input:Dynamic<Bool>;
 
 
-
-  public var inventory:Inventory = new Inventory();
-  public var weapons:WeaponManager = new WeaponManager();
+  /**
+   * Inventory manager
+   */
+  public var inventory:Inventory;
+  /**
+   * Weapons manager
+   */
+  public var weapons:WeaponManager;
   
 
 
 
   private var _spawnPoint:FlxPoint;
-  private var _tmpPoint:FlxPoint = new FlxPoint(0,0);
+  private var _tmpPoint:FlxPoint;
 
 
-  private var _aniArmedOffset:Int = 16;
-  private var _weaponOffsetMap:Array<Int>;
+  private var _aniArmedOffset:Int;
+  private var _weaponOffsetMap:Array<Dynamic<Int>>;
 
 
-  public function new(spawnPoint:FlxPoint, ?options:Dynamic):Void
+  override public function new(spawnPoint:FlxPoint, ?options:Dynamic):Void
   {
     super(spawnPoint.x, spawnPoint.y);
-
-    _spawnPoint.x = spawnPoint.x;
-    _spawnPoint.y = spawnPoint.y;
-
-    sprites.top.loadGraphic(PlayerANI, true, 16, 16);
+    _spawnPoint = new FlxPoint(spawnPoint.x, spawnPoint.y);
 
 
+    initSprites();
     initAnimations();
-
-    add(sprites.top);
-    add(sprites.weapon);
-
-
+    initPhysics();
+    initInput();
 
     /**
-     * Input definition
+     * Init stuff
      */
-    inputBind.jump = new Array(FlxKey.SPACE);
-    inputBind.left = new Array(FlxKey.LEFT);
-    inputBind.right = new Array(FlxKey.RIGHT);
-    inputBind.up = new Array(FlxKey.UP);
-    inputBind.down = new Array(FlxKey.DOWN);
-    inputBind.switchWeapon = new Array(FlxKey.Q);
-    inputBind.fire = new Array(FlxKey.E);
-    inputBind.skill = new Array(FlxKey.W);
-    inputBind.pause = new Array(FlxKey.P);
-    inputBind.menu = new Array(FlxKey.ESCAPE);
+    inventory = new Inventory();
+    weapons = new WeaponManager(this, 2);
+
+    _tmpPoint = new FlxPoint(0,0);
+    _aniArmedOffset = 16;
+
+    
+
   }
 
+  private function initSprites():Void
+  {
+    sprites = {};
+
+    _topSprite = new FlxNapeSprite(0, -4);
+    _botSprite = new FlxNapeSprite(0, 4);
+    sprites.weapon = new FlxSprite();
+
+    _topSprite.loadGraphic(PlayerANI, true, 16, 16);
+    _topSprite.createRectangularBody(8, 8, BodyType.KINEMATIC);
+    _topSprite.body.space = FlxNapeState.space;
+
+    _botSprite.createRectangularBody(8, 8, BodyType.KINEMATIC);
+    _botSprite.body.space = FlxNapeState.space;
+
+
+
+    add(_topSprite);
+    add(_botSprite);
+    add(sprites.weapon);
+  }
   private function initAnimations():Void
   {
     /**
      * Animations
      */
-    sprites.top.animations.add('stand', [0]);
-    sprites.top.animations.add('walk', [1,2,3,4,5], 20, true);
-    sprites.top.animations.add('jump', [6,7], 18, false);
-    sprites.top.animations.add('fall', [8,9], 6, true);
-    sprites.top.animations.add('sliding', [10]);
-    sprites.top.animations.add('landing', [11,12],22);
+    _topSprite.animation.add('stand', [0]);
+    _topSprite.animation.add('walk', [1,2,3,4,5], 20, true);
+    _topSprite.animation.add('jump', [6,7], 18, false);
+    _topSprite.animation.add('fall', [8,9], 6, true);
+    _topSprite.animation.add('sliding', [10]);
+    _topSprite.animation.add('landing', [11,12],22);
     // Armed
-    sprites.top.animations.add('armedstand', [16]);
-    sprites.top.animations.add('armedwalk', [17,18,19,20,21], 20, true);
-    sprites.top.animations.add('armedjump', [22,23], 18, false);
-    sprites.top.animations.add('armedfall', [24,25], 6, true);
-    sprites.top.animations.add('armedsliding', [26]);
-    sprites.top.animations.add('armedlanding', [11,12],22);
+    _topSprite.animation.add('armedstand', [16]);
+    _topSprite.animation.add('armedwalk', [17,18,19,20,21], 20, true);
+    _topSprite.animation.add('armedjump', [22,23], 18, false);
+    _topSprite.animation.add('armedfall', [24,25], 6, true);
+    _topSprite.animation.add('armedsliding', [26]);
+    _topSprite.animation.add('armedlanding', [11,12],22);
 
 
-    sprites.weapon.loadGraphic(Weapon.WeaponANI, true, 16, 16);
+    // sprites.weapon.loadGraphic(Weapon.WeaponANI, true, 16, 16);
     _weaponOffsetMap = 
-    [ {x:2, y:0}  // 16
-    , {x:2, y:0}  // 17
-    , {x:2, y:1}  // 18
-    , {x:2, y:1}  // 19
-    , {x:2, y:0}  // 20
-    , {x:2, y:0}  // 21
-    , {x:2, y:0}  // 22
-    , {x:1, y:0}  // 23
-    , {x:2, y:-1} // 24
-    , {x:2, y:-1} // 25
-    , {x:1, y:0}  // 26
-    , {x:2, y:2}  // 27
-    , {x:2, y:1}  // 28
-    ]
+    [
+      {x:2, y:0} , // 16
+      {x:2, y:0} , // 17
+      {x:2, y:1} , // 18
+      {x:2, y:1} , // 19
+      {x:2, y:0} , // 20
+      {x:2, y:0} , // 21
+      {x:2, y:0} , // 22
+      {x:1, y:0} , // 23
+      {x:2, y:-1}, // 24
+      {x:2, y:-1}, // 25
+      {x:1, y:0} , // 26
+      {x:2, y:2} , // 27
+      {x:2, y:1}   // 28
+    ];
+  }
+
+  private function initPhysics():Void
+  {
+    _acceleration = new Vec2(0,0);
+
+    _body = new Body( BodyType.KINEMATIC, new Vec2(0, 0) );
+    _body.shapes.add( new Circle(14) );
+    _body.space = FlxNapeState.space;
+
+    _feet = new Body( BodyType.KINEMATIC, new Vec2(0, 5) );
+    _feet.shapes.add( new Circle(4) );
+    _feet.space = FlxNapeState.space;
+  }
+
+  private function initInput():Void
+  {
+    _input = {
+      jump: false,
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      fire: false,
+      switchWeapon: false,
+      skill: false,
+      pause: false,
+      menu: false
+    };
+    _inputBind = {
+      jump: new Array<String>(),
+      left: new Array<String>(),
+      right: new Array<String>(),
+      up: new Array<String>(),
+      down: new Array<String>(),
+      fire: new Array<String>(),
+      switchWeapon: new Array<String>(),
+      skill: new Array<String>(),
+      pause: new Array<String>(),
+      menu: new Array<String>()
+    };
+
+    _inputBind.jump.push("SPACE");
+    _inputBind.left.push("LEFT");
+    _inputBind.right.push("RIGHT");
+    _inputBind.up.push("UP");
+    _inputBind.down.push("DOWN");
+    _inputBind.switchWeapon.push("Q");
+    _inputBind.fire.push("E");
+    _inputBind.skill.push("W");
+    _inputBind.pause.push("P");
+    _inputBind.menu.push("ESCAPE");
   }
 
 
@@ -211,7 +306,9 @@ class Player extends FlxSpriteGroup
    */
   private function accelerate(dir:Int):Void
   {
-    acceleration.x = _movement.acceleration * dir;
+    // acceleration.x = _movement.acceleration * dir;
+    _acceleration.x = _movement.acceleration * dir;
+    // _body.velocity.x = _movement.acceleration * dir;
 
     // TODO: Get rid of air control?
     // if(!isTouching(DOWN)){
@@ -227,13 +324,13 @@ class Player extends FlxSpriteGroup
   private function dash(dir:Int):Void
   {
     switch (dir) {
-      case RIGHT:
-        velocity.x = _movement.acceleration * _movement.dashRatio;
-      case LEFT:
-        velocity.x = _movement.acceleration * _movement.dashRatio * -1;
-      case DOWN:
-        velocity.x = 0;
-        velocity.y = _movement.acceleration;
+      case Player.RIGHT:
+        _body.velocity.x = _movement.acceleration * _movement.dashRatio;
+      case Player.LEFT:
+        _body.velocity.x = _movement.acceleration * _movement.dashRatio * -1;
+      case Player.DOWN:
+        _body.velocity.x = 0;
+        _body.velocity.y = _movement.acceleration;
     }
   }
 
@@ -242,14 +339,14 @@ class Player extends FlxSpriteGroup
    */
   private function jump():Void
   {
-    velocity.y = _jump.speed;
+    _body.velocity.y = _jump.speed;
 
-    jump.canDouble = false;
+    _jump.canDouble = false;
   }
 
   private function descend():Void
   {
-    // TODO: Haxify
+    // TODO: Haxify & we're on polygons now...
     // var tile = this.tileBelow
 
     // if(tile !== null && typeof tile.properties.isPlatform !== 'undefined'){
@@ -280,7 +377,7 @@ class Player extends FlxSpriteGroup
    * @param  {String} str
    * @return {String}
    */
-  private function animPrefix(str:String):Void
+  private function animPrefix(str:String):String
   {
     if( weapons.isArmed ){
       str = 'armed' + str;
@@ -323,7 +420,7 @@ class Player extends FlxSpriteGroup
      */
     if(onGround)
     {
-      jump.canDouble = true;
+      _jump.canDouble = true;
       if(_input.jump && !_input.down)
       {
         jump();
@@ -336,22 +433,22 @@ class Player extends FlxSpriteGroup
       /**
        * Animations
        */
-      if( Math.abs(velocity.x) > 5 )
+      if( Math.abs(_body.velocity.x) > 5 )
       {
         // Bot shouldn't have animPrefix for armed state
-        sprites.bot.animation.play("walk");
+        _botSprite.animation.play("walk");
       }
       else
       {
-        sprites.bot.animation.play("stand");
+        _botSprite.animation.play("stand");
       }
 
       // Sliding
       if(
-        velocity.x > 0 && _direction.move === RIGHT ||
-        velocity.x < 0 && _direction.move === LEFT
+        _body.velocity.x > 0 && _direction.move == RIGHT ||
+        _body.velocity.x < 0 && _direction.move == LEFT
       ){
-        sprites.bot.animation.play("sliding");
+        _botSprite.animation.play("sliding");
       }
     }
     else
@@ -361,7 +458,7 @@ class Player extends FlxSpriteGroup
       {
         if(_jump.canDouble)
         {
-          sprites.bot.animation.stop();
+          // _botSprite.animation.stop();
           jump();
 
           if(_input.left){
@@ -377,15 +474,15 @@ class Player extends FlxSpriteGroup
       /**
        * Animations
        */
-      if(velocity.y > 0)
+      if(_body.velocity.y > 0)
       {
-        sprites.bot.animations.play("fall");
+        _botSprite.animation.play("fall");
       }
       else
       {
-        if(sprites.bot.animation.name != "jump")
+        if(_botSprite.animation.name != "jump")
         {
-          sprites.bot.animation.play("jump");
+          _botSprite.animation.play("jump");
         }
       }
     }
@@ -395,14 +492,15 @@ class Player extends FlxSpriteGroup
 
     weapons.update();
 
-    if(weapons.weaponFired)
+    if(weapons.justFired)
     {
-      velocity.x += weapons.current.recoil * -direction.move;
+      _body.velocity.x += weapons.currentWeapon.recoil * -_direction.move;
 
       // TODO: Shake based on recoil and look direction: SHAKE_VERTICAL/HORIZONTAL
       FlxG.camera.shake(0.05, 0.1);
     }
 
+    updateSpritePositions();
     updateCamTarget();
   }
 
@@ -411,21 +509,23 @@ class Player extends FlxSpriteGroup
    */
   private function getKeys():Void
   { 
-    _input.jump = FlxG.keys.anyPressed(inputBind.jump);
-    _input.left = FlxG.keys.anyPressed(inputBind.left);
-    _input.right = FlxG.keys.anyPressed(inputBind.right);
-    _input.up = FlxG.keys.anyPressed(inputBind.up);
-    _input.down = FlxG.keys.anyPressed(inputBind.down);
-    _input.fire = FlxG.keys.anyPressed(inputBind.fire);
-    _input.switchWeapon = FlxG.keys.anyPressed(inputBind.switchWeapon);
-    _input.skill = FlxG.keys.anyPressed(inputBind.skill);
-    _input.pause = FlxG.keys.anyPressed(inputBind.pause);
-    _input.menu = FlxG.keys.anyPressed(inputBind.menu);
+    _input.jump = FlxG.keys.anyPressed(_inputBind.jump);
+    _input.left = FlxG.keys.anyPressed(_inputBind.left);
+    _input.right = FlxG.keys.anyPressed(_inputBind.right);
+    _input.up = FlxG.keys.anyPressed(_inputBind.up);
+    _input.down = FlxG.keys.anyPressed(_inputBind.down);
+    _input.fire = FlxG.keys.anyPressed(_inputBind.fire);
+    _input.switchWeapon = FlxG.keys.anyPressed(_inputBind.switchWeapon);
+    _input.skill = FlxG.keys.anyPressed(_inputBind.skill);
+    _input.pause = FlxG.keys.anyPressed(_inputBind.pause);
+    _input.menu = FlxG.keys.anyPressed(_inputBind.menu);
 
     // TODO: add Touch input and Gamepad
   }
 
-
+  /**
+   * Update weapon's xy position according to animation on spritesheets
+   */
   private function updateWeaponOffset():Void
   {
     var frameIndex:Int = 0;
@@ -442,6 +542,21 @@ class Player extends FlxSpriteGroup
     // this.weapon.y = this.sprite.y + this.sprite.body.deltaY() + this.weaponOffsetMap[frameIndex][1] * 2;
   }
 
+  /**
+   * Only one body is being moved by all calculations
+   * This function updates all attached sprites and bodies to follow _body's position
+   */
+  private function updateSpritePositions():Void
+  {
+    _topSprite.body.position = _botSprite.body.position;
+
+    sprites.weapon.x = _topSprite.body.position.x;
+    sprites.weapon.y = _topSprite.body.position.y;
+  }
+
+  /**
+   * Updates the target camera position
+   */
   private function updateCamTarget():Void
   {
     _camTarget.x = x + velocity.x / 5;

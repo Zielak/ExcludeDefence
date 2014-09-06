@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="64" height="32" tilewidth="16" tileheight="16">
+ <objectgroup name="world" width="64" height="32">
+  <object x="13" y="37">
+   <polygon points="0,0 65,-3 46,313 57,373 104,390 294,389 293,377 312,378 311,362 336,365 335,353 423,351 424,365 441,363 442,378 587,377 583,502 -10,497"/>
+  </object>
+  <object x="642" y="417">
+   <polygon points="0,0 -3,119 369,121 375,-422 270,-419 287,-283 294,-90 294,-15 291,-7 273,7 212,23 56,22 23,1"/>
+  </object>
+ </objectgroup>
+ <objectgroup name="volumes" width="64" height="32">
+  <object name="playerStart" x="155" y="357" width="34" height="34">
+   <ellipse/>
+  </object>
+ </objectgroup>
+</map>
