@@ -1,5 +1,6 @@
 package;
 
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -12,6 +13,8 @@ import flixel.util.FlxRandom;
 
 import flixel.addons.nape.FlxNapeState;
 
+import core.Player;
+import ui.HUD;
 import weapons.Projectile;
 import world.Level;
 
@@ -23,8 +26,13 @@ class PlayState extends FlxNapeState
 
 
   public var projectiles:FlxTypedGroup<Projectile>;
+  // public var enemies:FlxTypedGroup<Enemy>;
 
   private var _currentLevel:Level;
+
+
+  public var player:Player;
+  public var hud:HUD;
 
   /**
    * Function that is called up when to state is created to set it up. 
@@ -35,15 +43,25 @@ class PlayState extends FlxNapeState
     FlxG.stage.quality = flash.display.StageQuality.LOW;
     napeDebugEnabled = true;
 
+
     projectiles = new FlxTypedGroup<Projectile>();
+    add(projectiles);
 
 
     _currentLevel = new Level();
-    FlxG.log.add(_currentLevel.polymap.toString());
-    add(_currentLevel.polymap);
     add(_currentLevel.linemap);
 
-    add(projectiles);
+
+    player = new Player(_currentLevel.spawnPoint);
+    add(player);
+
+    
+    hud = new HUD();
+    add(hud);
+
+
+    FlxG.camera.focusOn( new FlxPoint(player.x, player.y));
+    FlxG.camera.follow(player, FlxCamera.STYLE_LOCKON, 5);
   }
   
   /**
@@ -69,4 +87,14 @@ class PlayState extends FlxNapeState
       projectiles.add(bullet);
     }
   }
+
+
+
+
+  public function addBullet(projectile:Projectile):Void
+  {
+    projectiles.add(projectile);
+  }
 }
+
+

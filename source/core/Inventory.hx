@@ -1,6 +1,9 @@
 
 package core;
 
+import items.Item;
+import perks.Perk;
+
 class Inventory 
 {
 

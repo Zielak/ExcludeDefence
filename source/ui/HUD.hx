@@ -65,7 +65,6 @@ class HUD extends FlxTypedGroup<FlxSprite>
 
   override public function update():Void
   {
-    super();
 
     _elapsed = FlxG.elapsed;
 
@@ -74,6 +73,7 @@ class HUD extends FlxTypedGroup<FlxSprite>
       _flash.visible = false;
     }
 
+    super.update();
   }
 
 
@@ -111,14 +111,14 @@ class HUD extends FlxTypedGroup<FlxSprite>
 
 
 
-  private function updateLevelTxt(text:String):Void
+  private function updateLevelTxt(text:Dynamic):Void
   {
-    _levelTxt.text = "Level: "+text;
+    _levelTxt.text = "Level: "+Std.string(text);
   }
 
-  private function updateScoreTxt(text:String):Void
+  private function updateScoreTxt(text:Dynamic):Void
   {
-    _scoreTxt.text = "Score: "+text;
+    _scoreTxt.text = "Score: "+Std.string(text);
   }
 
 }
