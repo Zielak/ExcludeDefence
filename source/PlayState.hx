@@ -10,16 +10,21 @@ import flixel.util.FlxMath;
 import flixel.util.FlxPoint;
 import flixel.util.FlxRandom;
 
+import flixel.addons.nape.FlxNapeState;
+
 import weapons.Projectile;
+import world.Level;
 
 /**
  * A FlxState which can be used for the actual gameplay.
  */
-class PlayState extends FlxState
+class PlayState extends FlxNapeState
 {
 
 
   public var projectiles:FlxTypedGroup<Projectile>;
+
+  private var _currentLevel:Level;
 
   /**
    * Function that is called up when to state is created to set it up. 
@@ -28,7 +33,14 @@ class PlayState extends FlxState
   {
     super.create();
 
+    napeDebugEnabled = true;
+
     projectiles = new FlxTypedGroup<Projectile>();
+
+
+    _currentLevel = new Level();
+    FlxG.log.add(_currentLevel.polymap.toString());
+    add(_currentLevel.polymap);
 
     add(projectiles);
   }
@@ -54,8 +66,6 @@ class PlayState extends FlxState
 
       var bullet = new Projectile(new FlxPoint(FlxG.mouse.x,FlxG.mouse.y), new FlxPoint(FlxRandom.intRanged(-100,100),FlxRandom.intRanged(-100,100) ));
       projectiles.add(bullet);
-
-      FlxG.log.add('MouseClicked!');
     }
   }
 }
